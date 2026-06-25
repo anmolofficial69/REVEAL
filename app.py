@@ -37,12 +37,14 @@ class registration(BaseModel):
 class Posts(BaseModel):
     content:str
 
-conn=psycopg2.connect(
-    host="localhost",
-    database="reveal",
-    user="postgres",
-    password="anmol"
-)
+import os
+import psycopg2
+
+SECRET_KEY = os.getenv("SECRET_KEY")
+
+DATABASE_URL = os.getenv("DATABASE_URL")
+
+conn = psycopg2.connect(DATABASE_URL)
 cursor=conn.cursor()
 
 @app.post("/register")
