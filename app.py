@@ -37,12 +37,16 @@ SECRET_KEY = os.getenv("SECRET_KEY")
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 
-conn = psycopg2.connect(DATABASE_URL)
-cursor=conn.cursor()
-
 engine=create_engine(DATABASE_URL)
+
+def get_db():
+    conn = psycopg2.connect(DATABASE_URL)
+    cursor = conn.cursor()
+    return conn, cursor
+
 @app.post("/register")
 def register(users:registration):
+    conn,cursor=get_db()
     hashed_password=pwd_context.hash(users.password)
     try:
         cursor.execute(
@@ -51,6 +55,8 @@ def register(users:registration):
                (users.username,hashed_password)
         )
         conn.commit()
+        cursor.close()
+        conn.close()
         return {"message":"user registered :)"}
     except:
         conn.rollback()
@@ -58,6 +64,7 @@ def register(users:registration):
 
 @app.post("/login")
 def login(users:registration):
+    conn,cursor=get_db()
     cursor.execute(
         """select id,username,password
            from users
@@ -84,10 +91,13 @@ def login(users:registration):
         SECRET_KEY,
         algorithm="HS256",
     )
+    cursor.close()
+    conn.close()
     return {"token":token}
        
 @app.post("/posts")
 def create_post(posts:Posts,authorization:str=Header()):
+    conn,cursor=get_db()
     token=authorization.split(" ")[1]
     payload=jwt.decode(
         token,
@@ -102,11 +112,14 @@ def create_post(posts:Posts,authorization:str=Header()):
             (posts.content,user_id)
     )
     conn.commit()
+    cursor.close()
+    conn.close()
     return {"message":"post created"}
     
 
 @app.get("/posts")
 def show_post():
+    conn,cursor=get_db()
     cursor.execute(
         """SELECT posts.id, posts.content, users.username, COUNT(likes.user_id) AS like_count
            FROM posts
@@ -115,11 +128,14 @@ def show_post():
            GROUP BY posts.id, posts.content, users.username"""
     )
     show = cursor.fetchall()
+    cursor.close()
+    conn.close()
     return [{"id": r[0], "content": r[1], "username": r[2], "likes": r[3]} for r in show]
 
 
 @app.delete("/post/{id}")
 def delete(id:int,authorization:str=Header()):
+    conn,cursor=get_db()
     
     token=authorization.split(" ")[1]
     payload=jwt.decode(
@@ -136,10 +152,13 @@ def delete(id:int,authorization:str=Header()):
             (id,user_id)
     )
     conn.commit()
+    cursor.close()
+    conn.close()
     return {"message":"post deleted"}
 
 @app.post("/post/{id}/like")
 def like(id:int,authorization : str=Header()):
+    conn,cursor=get_db()
     token=authorization.split(" ")[1]
     payload=jwt.decode(
         token,
@@ -154,10 +173,13 @@ def like(id:int,authorization : str=Header()):
         (id,user_id)
     )
     conn.commit()
+    cursor.close()
+    conn.close()
     return {"message":"post is liked"}
 
 @app.delete("/post/{id}/like")
 def del_like(id:int,authorization : str=Header()):
+    conn,cursor=get_db()
     token=authorization.split(" ")[1]
     payload=jwt.decode(
         token,
@@ -173,4 +195,6 @@ def del_like(id:int,authorization : str=Header()):
         (id,user_id)
     )
     conn.commit()
+    cursor.close()
+    conn.close()
     return {"message":"post like is deleted"}
