@@ -130,7 +130,7 @@ def show_post():
     show = cursor.fetchall()
     cursor.close()
     conn.close()
-    return [{"id": r[0], "content": r[1], "username": r[2], "likes": r[3]} for r in show]
+    return [{"id": r[0], "content": r[1], "likes": r[2]} for r in show]
 
 
 @app.delete("/post/{id}")
