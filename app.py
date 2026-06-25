@@ -168,10 +168,14 @@ def like(id:int,authorization : str=Header()):
     user_id=payload["user_id"]
 
     cursor.execute(
-        """insert into likes(post_id,user_id)
-           values(%s,%s)""",
-        (id,user_id)
-    )
+    """
+    INSERT INTO likes(post_id,user_id)
+    VALUES(%s,%s)
+    ON CONFLICT (post_id,user_id)
+    DO NOTHING
+    """,
+    (id, user_id)
+)
     conn.commit()
     cursor.close()
     conn.close()
